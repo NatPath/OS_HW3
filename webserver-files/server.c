@@ -32,6 +32,24 @@ void thread_handles_request(Queue requests){
         Close(connfd);
     }
 }
+typedef enum { BLOCK , DROP_TAIL, DROP_HEAD , RANDOM_DROP, DROP_ERROR} OverLoadHandling;
+OverLoadHandling choose_OL_Handling_Method(const char * schedalg){
+    if (strcmp(schedalg,"block")){
+        return BLOCK;
+    }
+    if (strcmp(schedalg,"dt")){
+        return DROP_TAIL;
+    }
+    if (strcmp(schedalg,"dh")){
+        return DROP_HEAD;
+    }
+    if (strcmp(schedalg,"random")){
+        return RANDOM_DROP;
+    }
+    else{
+        return DROP_ERROR;
+    }
+}
 int main(int argc, char *argv[])
 {
     int listenfd, connfd, port, clientlen;
@@ -40,6 +58,8 @@ int main(int argc, char *argv[])
     int num_of_threads, queue_size;
 
     getargs(&port,&num_of_threads,&queue_size, argc, argv);
+    const char * schedalg = argv[4];
+    OverLoadHandling olh = choose_OL_Handling_Method(schedalg);
 
 
     // 
@@ -48,15 +68,60 @@ int main(int argc, char *argv[])
     for (int i=0 ; i< num_of_threads;i++){
         pthread_t t;
         pthread_create(&t,NULL,thread_handles_request,(void*)requests);
-
     }
     //
 
 
     listenfd = Open_listenfd(port);
+    switch(olh){
+        case BLOCK:
+        while (1) {
+            clientlen = sizeof(clientaddr);
+            connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+            enQueue(requests,connfd);
+        }
+        break;
+        case DROP_TAIL:
+        while (1) {
+            clientlen = sizeof(clientaddr);
+            connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+            pthread_mutex_lock(&requests->_mutex);
+            int size = getSizeQueue(requests);
+            if (size == requests->_max_capacity){
+                close(connfd);
+                pthread_mutex_unlock(&requests->_mutex);
+            }
+            else{
+                pthread_mutex_unlock(&requests->_mutex);
+                enQueue(requests, connfd);
+            }
+        }
+        break;
+        case DROP_HEAD:
+            clientlen = sizeof(clientaddr);
+            connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+            pthread_mutex_lock(&requests->_mutex);
+            int size = getSizeQueue(requests);
+            if (size == requests->_max_capacity){
+                nonAtomic_deQueue(requests);
+                enQueue(requests,connfd);
+                pthread_mutex_unlock(&requests->_mutex);
+            }
+            else{
+                pthread_mutex_unlock(&requests->_mutex);
+                enQueue(requests, connfd);
+            }
+        break;
+        case RANDOM_DROP:
+        break;
+    }
     while (1) {
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+        pthread_mutex_lock(&requests->_mutex);
+
+        pthread_mutex_unlock(&requests->_mutex);
+
         enQueue(requests,connfd);
 	// 
 	// HW3: In general, don't handle the request in the main thread.
