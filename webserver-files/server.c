@@ -1,6 +1,8 @@
 #include "segel.h"
 #include "request.h"
 #include "queue.h"
+#include <sys/time.h>
+
 
 // 
 // server.c: A very, very simple web server
@@ -26,8 +28,12 @@ void getargs(int *port, int *num_of_threads, int *queue_size,  int argc, char *a
 
 
 void thread_handles_request(Queue requests){
+    // pass a struct as the argument, containing the Queue and the thread id.
     while(1){
         int connfd= deQueue(requests);
+        struct timeval *time;
+        gettimeofday(time,NULL);
+        int dispatch = time->tv_sec*1000+time->tv_usec/1000 -arrival_time;  // ???
         requestHandle(connfd);
         Close(connfd);
     }
@@ -64,9 +70,11 @@ int main(int argc, char *argv[])
 
     // 
     // HW3: Create some threads...
+   
     Queue requests= queueCreate(queue_size);
     for (int i=0 ; i< num_of_threads;i++){
         pthread_t t;
+        
         pthread_create(&t,NULL,thread_handles_request,(void*)requests);
     }
     //
@@ -115,9 +123,13 @@ int main(int argc, char *argv[])
         case RANDOM_DROP:
         break;
     }
+    struct timeval *time;
+    int arrival_time;
     while (1) {
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+        gettimeofday(time,NULL);
+        arrival_time = time->tv_sec*1000+time->tv_usec/1000;  // stat-req-arrival
         pthread_mutex_lock(&requests->_mutex);
 
         pthread_mutex_unlock(&requests->_mutex);
