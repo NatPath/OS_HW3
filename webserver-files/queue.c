@@ -2,9 +2,26 @@
 #include <pthread.h>
 #include <malloc.h>
 #include "queue.h"
-Node nodeCreate(int value){
-    Node node= (Node)malloc(sizeof(*node));
+/*
+ReqNode nodeCreate(int value, struct timeval * arrival_time){
+    ReqNode node= (ReqNode)malloc(sizeof(*node));
     node->_value=value;
+    node->_arrival_time=arrival_time;
+    node->_next=NULL;
+    //node->_prev=NULL;
+    return node;
+}
+*/
+ReqDetails reqDetailsCreate(int connfd, struct timeval * arrival_time){
+    ReqDetails new_req = (ReqDetails)malloc(sizeof(*new_req));
+    new_req->_connfd=connfd;
+    new_req->_arrival_time= arrival_time;
+    return new_req;
+
+}
+ReqNode nodeCreate(ReqDetails req){
+    ReqNode node= (ReqNode)malloc(sizeof(*node));
+    node->_req=req;
     node->_next=NULL;
     //node->_prev=NULL;
     return node;
@@ -12,8 +29,8 @@ Node nodeCreate(int value){
 
 
 
-Queue queueCreate(int max_capacity){
-    Queue q = (Queue)malloc(sizeof(*q));
+ReqQueue queueCreate(int max_capacity){
+    ReqQueue q = (ReqQueue)malloc(sizeof(*q));
     q->_head=NULL;
     q->_tail=NULL;
     q->_size=0;
@@ -23,20 +40,17 @@ Queue queueCreate(int max_capacity){
     q->_max_capacity=max_capacity;
     return q;
 }
-Queue queueDestroy(Queue q){
+ReqQueue queueDestroy(ReqQueue q){
     free(q);
 }
- void enQueue(Queue q,int new_val){
-    
-     
-     /*
-     
-     */
+ void enQueue(ReqQueue q,ReqDetails req){
     pthread_mutex_lock(&q->_mutex);
     while (q->_size == q->_max_capacity){
         pthread_cond_wait(&q->_enqueue_allowed,&q->_mutex);
     }
-    Node new_node = nodeCreate(new_val);
+    nonAtomic_enQueue(q,req);
+    /*
+    ReqNode new_node = nodeCreate(req);
     if (q->_size==0){
          q->_head = new_node;
          q->_tail = new_node;
@@ -46,30 +60,43 @@ Queue queueDestroy(Queue q){
          q->_tail = q->_tail->_next;
      }
     q->_size++;
+    */
     pthread_cond_signal(&q->_dequeue_allowed);
     pthread_mutex_unlock(&q->_mutex);
 
 
  }
- int topQueue(Queue q){
-     if (q->_size != 0){
-         return q->_head->_value;
+ ReqNode nonAtomic_enQueue(ReqQueue q, ReqDetails req){
+    ReqNode new_node = nodeCreate(req);
+    if (q->_size==0){
+         q->_head = new_node;
+         q->_tail = new_node;
      }
      else{
-         return -1; // indicating an error, the queue is empty
+         q->_tail->_next = new_node;
+         q->_tail = q->_tail->_next;
+     }
+    q->_size++;
+    return new_node;
+ }
+ ReqDetails topQueue(ReqQueue q){
+     if (q->_size != 0){
+         return q->_head->_req;
+     }
+     else{
+         return NULL; // indicating an error, the queue is empty
      }
  }
- int nonAtomic_deQueue(Queue q){
+ int nonAtomic_deQueue(ReqQueue q){
     int res;
     res = topQueue(q);
-    Node temp = q->_head;
+    ReqNode temp = q->_head;
     q->_head = q->_head->_next; 
     free(temp);
     q->_size--;
     return res;
-    
  }
- int deQueue(Queue q){
+ int deQueue(ReqQueue q){
 
     int res;
     pthread_mutex_lock(&q->_mutex);
@@ -77,7 +104,7 @@ Queue queueDestroy(Queue q){
         pthread_cond_wait(&q->_dequeue_allowed,&q->_mutex);
     }
     res = topQueue(q);
-    Node temp = q->_head;
+    ReqNode temp = q->_head;
     q->_head = q->_head->_next; 
     free(temp);
     q->_size--;
@@ -87,7 +114,11 @@ Queue queueDestroy(Queue q){
     return res;
     
  }
+void nonAtomic_removeRequest(ReqQueue q,ReqNode reqNode){
+    reqNode = reqNode->_next;
+    q->_size--;
+}
 
- int getSizeQueue(Queue q){
+ int getSizeQueue(ReqQueue q){
      return q->_size;
  }
