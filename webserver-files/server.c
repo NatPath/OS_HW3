@@ -46,7 +46,7 @@ void getargs(int *port, int *num_of_threads, int *queue_size,  int argc, char *a
 }
 
 
-void thread_handles_request(UltraQueue requests){
+void thread_handles_request(ThreadData statistics){
     // pass a struct as the argument, containing the Queue and the thread id.
     /*
     typedef struct thread_data{
@@ -56,21 +56,29 @@ void thread_handles_request(UltraQueue requests){
     }* ThreadData;
     ThreadData this_thread = ThreadDataCreate(0,0,0);
     */
+   /*
     int thread_data[3]={0,0,0}; // 1st : thread_count , 2nd : thread _static , 3rd : thread_dynamic
     int thread_count = 0;
     int thread_static = 0;
     int thread_dynamic = 0;
+    */
+    UltraQueue requests = statistics->_requests;
     ReqNode req_node = NULL;
     ReqDetails det = NULL;
+    struct timeval *arrival;
+    struct timeval *dispatch;
     while(1){
         req_node = grabRequest(requests);
         det = req_node->_req;
         //int connfd= deQueue(requests);     
         int connfd = det->_connfd;
-        struct timeval *time;
-        gettimeofday(time,NULL);
-        int dispatch = time->tv_sec*1000+time->tv_usec/1000 - (det->_arrival_time); 
-        requestHandle(connfd);
+        arrival = det->_arrival_time;
+        gettimeofday(dispatch,NULL);
+        dispatch->tv_sec-=arrival->tv_sec;
+        dispatch->tv_usec-=arrival->tv_usec;
+        statistics->_arrival = arrival;
+        statistics->_dispatch = dispatch;
+        requestHandle(connfd,statistics);
         Close(connfd);
         finishRequest(requests,req_node);
     }
@@ -109,14 +117,15 @@ int main(int argc, char *argv[])
     // HW3: Create some threads...
    
     UltraQueue requests = ultraQueueCreate(queue_size);
+    ThreadData statistics;
     for (int i=0 ; i< num_of_threads;i++){
         pthread_t t;
-        
-        pthread_create(&t,NULL,thread_handles_request,(void*)requests);
+        statistics = threadDataCreate(i,requests);
+        pthread_create(&t,NULL,thread_handles_request,(void*)statistics);
     }
     //
 
-    struct timeval *time;       
+    struct timeval *arrival;       
     int arrival_time;
     ReqDetails req; 
 
@@ -126,9 +135,8 @@ int main(int argc, char *argv[])
         while (1) {
             clientlen = sizeof(clientaddr);
             connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-            gettimeofday(time,NULL);
-            arrival_time = time->tv_sec*1000+time->tv_usec/1000;  // stat-req-arrival
-            req= reqDetailsCreate(connfd,arrival_time);
+            gettimeofday(arrival,NULL);
+            req= reqDetailsCreate(connfd,arrival);
             insertRequest(requests, req);
         }
         break;
@@ -136,9 +144,8 @@ int main(int argc, char *argv[])
         while (1) {
             clientlen = sizeof(clientaddr);
             connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-            gettimeofday(time,NULL);
-            arrival_time = time->tv_sec*1000+time->tv_usec/1000;  // stat-req-arrival
-            req= reqDetailsCreate(connfd,arrival_time);
+            gettimeofday(arrival,NULL);
+            req= reqDetailsCreate(connfd,arrival);
             pthread_mutex_lock(&requests->_mutex);
             int size = getSizeUltraQueue(requests);
             if (size == requests->_max_capacity){
@@ -155,9 +162,8 @@ int main(int argc, char *argv[])
         while(1) {
             clientlen = sizeof(clientaddr);
             connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-            gettimeofday(time,NULL);
-            arrival_time = time->tv_sec*1000+time->tv_usec/1000;  // stat-req-arrival
-            req= reqDetailsCreate(connfd,arrival_time);
+            gettimeofday(arrival,NULL);
+            req= reqDetailsCreate(connfd,arrival);
             pthread_mutex_lock(&requests->_mutex);
             int size = getSizeUltraQueue(requests);
             if (size == requests->_max_capacity){

@@ -4,8 +4,8 @@
 
 typedef struct req_details{
     int _connfd;
-   // struct timeval *_arrival_time;
-   int _arrival_time;
+   struct timeval *_arrival_time;
+
 }* ReqDetails;
 ReqDetails reqDetailsCreate(int connfd, struct timeval * arrival_time);
 
