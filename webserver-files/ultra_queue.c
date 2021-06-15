@@ -24,7 +24,6 @@ void insertRequest(UltraQueue uq, ReqDetails req_details){
 }
 void nonAtomic_insertRequest(UltraQueue uq, ReqDetails req_details){
     nonAtomic_enQueue(uq->_requests_waiting,req_details);
-    uq->_requests_waiting->_size++;
     uq->_size++;
 }
 ReqNode grabRequest(UltraQueue uq){
@@ -52,7 +51,7 @@ void finishRequest(UltraQueue uq, ReqNode reqNode){
 }
 
 int getSizeUltraQueue(UltraQueue uq){
-    if (uq->_requests_waiting->_size + uq->_requests_working != uq->_size){
+    if (uq->_requests_waiting->_size + uq->_requests_working->_size != uq->_size){
         return -1; // indicating there is an error
     }
     else{
