@@ -65,8 +65,8 @@ void thread_handles_request(ThreadData statistics){
     UltraQueue requests = statistics->_requests;
     ReqNode req_node = NULL;
     ReqDetails det = NULL;
-    struct timeval *arrival;
-    struct timeval *dispatch;
+    struct timeval *arrival=(struct timeval*)malloc(sizeof(*arrival));
+    struct timeval *dispatch= (struct timeval*)malloc(sizeof(*dispatch));
     while(1){
         req_node = grabRequest(requests);
         det = req_node->_req;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     }
     //
 
-    struct timeval *arrival;       
+    struct timeval *arrival= (struct timeval*)malloc(sizeof(*arrival));       
     int arrival_time;
     ReqDetails req; 
 
@@ -178,6 +178,8 @@ int main(int argc, char *argv[])
         }
         break;
         case RANDOM_DROP:
+        break;
+        case DROP_ERROR:
         break;
     }
     
