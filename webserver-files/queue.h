@@ -31,10 +31,10 @@ typedef struct req_queue{
 ReqQueue queueCreate(int max_capactiy);
 void enQueue(ReqQueue q,ReqDetails req);
 ReqNode nonAtomic_enQueue(ReqQueue q, ReqDetails req);
-int topQueue(ReqQueue q);
-int deQueue(ReqQueue q);
+ReqDetails topQueue(ReqQueue q);
+ReqDetails deQueue(ReqQueue q);
 //
-int nonAtomic_deQueue(ReqQueue q);
+ReqDetails nonAtomic_deQueue(ReqQueue q);
 // removes specific node from queue, updates the size 
 void nonAtomic_removeRequest(ReqQueue q,ReqNode reqNode);
 int getSizeQueue(ReqQueue q);

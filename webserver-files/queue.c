@@ -87,8 +87,8 @@ ReqQueue queueDestroy(ReqQueue q){
          return NULL; // indicating an error, the queue is empty
      }
  }
- int nonAtomic_deQueue(ReqQueue q){
-    int res;
+ ReqDetails nonAtomic_deQueue(ReqQueue q){
+    ReqDetails res;
     res = topQueue(q);
     ReqNode temp = q->_head;
     q->_head = q->_head->_next; 
@@ -96,9 +96,9 @@ ReqQueue queueDestroy(ReqQueue q){
     q->_size--;
     return res;
  }
- int deQueue(ReqQueue q){
+ ReqDetails deQueue(ReqQueue q){
 
-    int res;
+    ReqDetails res;
     pthread_mutex_lock(&q->_mutex);
     while(q->_size==0){
         pthread_cond_wait(&q->_dequeue_allowed,&q->_mutex);

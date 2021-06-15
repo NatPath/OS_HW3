@@ -2,8 +2,8 @@
 
 UltraQueue ultraQueueCreate(int max_capacity){
     UltraQueue new_uq = (UltraQueue)malloc(sizeof(*new_uq));
-    new_uq->_requests_waiting= queueCreate();
-    new_uq->_requests_working= queueCreate();
+    new_uq->_requests_waiting= queueCreate(max_capacity);
+    new_uq->_requests_working= queueCreate(max_capacity);
     new_uq->_size=0;
     new_uq->_max_capacity=max_capacity;
     pthread_cond_init(&new_uq->_enqueue_allowed,NULL);

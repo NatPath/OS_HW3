@@ -1,6 +1,7 @@
 #ifndef _ULTRA_QUEUE_H
 #define _ULTRA_QUEUE_H
 #include "queue.h"
+#include <malloc.h>
 
 typedef struct ultra_queue{
     ReqQueue _requests_waiting;
