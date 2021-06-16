@@ -70,7 +70,6 @@ void thread_handles_request(ThreadData statistics){
     while(1){
         req_node = grabRequest(requests);
         det = req_node->_req;
-        //int connfd= deQueue(requests);     
         int connfd = det->_connfd;
         arrival = det->_arrival_time;
         gettimeofday(dispatch,NULL);
