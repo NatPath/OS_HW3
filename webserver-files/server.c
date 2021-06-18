@@ -175,12 +175,13 @@ int main(int argc, char *argv[])
                 if (size == requests->_max_capacity){
                     if (requests->_requests_waiting->_size==0){
                         Close(connfd);
+
                     }
                     else{
                         nonAtomic_cancelRequest(requests);
                         nonAtomic_insertRequest(requests,req);
-                        pthread_mutex_unlock(&requests->_mutex);
                     }
+                    pthread_mutex_unlock(&requests->_mutex);
                 }
                 else{
                     pthread_mutex_unlock(&requests->_mutex);
@@ -203,8 +204,8 @@ int main(int argc, char *argv[])
                     else{
                         randomDropQueue(requests->_requests_waiting);
                         nonAtomic_insertRequest(requests,req);
-                        pthread_mutex_unlock(&requests->_mutex);
                     }
+                    pthread_mutex_unlock(&requests->_mutex);
                 }
                 else{
                     pthread_mutex_unlock(&requests->_mutex);

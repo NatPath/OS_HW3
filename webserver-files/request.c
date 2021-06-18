@@ -158,7 +158,7 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, ThreadData stati
 
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, statistics->_thread_static);
 
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, statistics->_thread_dynamic);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, statistics->_thread_dynamic);
 
    Rio_writen(fd, buf, strlen(buf));
    int pid = Fork();
