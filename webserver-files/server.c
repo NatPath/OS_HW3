@@ -45,23 +45,8 @@ void getargs(int *port, int *num_of_threads, int *queue_size,  int argc, char *a
     *queue_size = atoi(argv[3]);
 }
 
-
+/*
 void thread_handles_request(ThreadData statistics){
-    // pass a struct as the argument, containing the Queue and the thread id.
-    /*
-    typedef struct thread_data{
-        int thread_count;
-        int thread_static;
-        int thread_dynamic;
-    }* ThreadData;
-    ThreadData this_thread = ThreadDataCreate(0,0,0);
-    */
-   /*
-    int thread_data[3]={0,0,0}; // 1st : thread_count , 2nd : thread _static , 3rd : thread_dynamic
-    int thread_count = 0;
-    int thread_static = 0;
-    int thread_dynamic = 0;
-    */
     UltraQueue requests = statistics->_requests;
     ReqNode req_node = NULL;
     ReqDetails det = NULL;
@@ -78,22 +63,46 @@ void thread_handles_request(ThreadData statistics){
         statistics->_arrival = arrival;
         statistics->_dispatch = dispatch;
         requestHandle(connfd,statistics);
-        Close(connfd);
         finishRequest(requests,req_node);
     }
 }
+*/
+
+void* thread_handles_request(void* stats){
+    ThreadData statistics = (ThreadData)stats;
+    UltraQueue requests = statistics->_requests;
+    ReqNode req_node = NULL;
+    ReqDetails det = NULL;
+    struct timeval *arrival=(struct timeval*)malloc(sizeof(*arrival));
+    struct timeval *dispatch= (struct timeval*)malloc(sizeof(*dispatch));
+    while(1){
+        req_node = grabRequest(requests);
+        det = req_node->_req;
+        int connfd = det->_connfd;
+        arrival = det->_arrival_time;
+        gettimeofday(dispatch,NULL);
+        dispatch->tv_sec-=arrival->tv_sec;
+        dispatch->tv_usec-=arrival->tv_usec;
+        statistics->_arrival = arrival;
+        statistics->_dispatch = dispatch;
+        requestHandle(connfd,statistics);
+        finishRequest(requests,req_node);
+    }
+    return NULL;
+}
+
 typedef enum { BLOCK , DROP_TAIL, DROP_HEAD , RANDOM_DROP, DROP_ERROR} OverLoadHandling;
 OverLoadHandling choose_OL_Handling_Method(const char * schedalg){
-    if (strcmp(schedalg,"block")){
+    if (!strcmp(schedalg,"block")){
         return BLOCK;
     }
-    if (strcmp(schedalg,"dt")){
+    if (!strcmp(schedalg,"dt")){
         return DROP_TAIL;
     }
-    if (strcmp(schedalg,"dh")){
+    if (!strcmp(schedalg,"dh")){
         return DROP_HEAD;
     }
-    if (strcmp(schedalg,"random")){
+    if (!strcmp(schedalg,"random")){
         return RANDOM_DROP;
     }
     else{
@@ -104,7 +113,6 @@ int main(int argc, char *argv[])
 {
     int listenfd, connfd, port, clientlen;
     struct sockaddr_in clientaddr;
-
     int num_of_threads, queue_size;
 
     getargs(&port,&num_of_threads,&queue_size, argc, argv);
@@ -125,77 +133,88 @@ int main(int argc, char *argv[])
     //
 
     struct timeval *arrival= (struct timeval*)malloc(sizeof(*arrival));       
-    int arrival_time;
     ReqDetails req; 
 
     listenfd = Open_listenfd(port);
     switch(olh){
         case BLOCK:
-        while (1) {
-            clientlen = sizeof(clientaddr);
-            connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-            gettimeofday(arrival,NULL);
-            req= reqDetailsCreate(connfd,arrival);
-            insertRequest(requests, req);
-        }
-        break;
-        case DROP_TAIL:
-        while (1) {
-            clientlen = sizeof(clientaddr);
-            connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-            gettimeofday(arrival,NULL);
-            req= reqDetailsCreate(connfd,arrival);
-            pthread_mutex_lock(&requests->_mutex);
-            int size = getSizeUltraQueue(requests);
-            if (size == requests->_max_capacity){
-                close(connfd);
-                pthread_mutex_unlock(&requests->_mutex);
-            }
-            else{
-                pthread_mutex_unlock(&requests->_mutex);
+            while (1) {
+                clientlen = sizeof(clientaddr);
+                connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+                gettimeofday(arrival,NULL);
+                req= reqDetailsCreate(connfd,arrival);
                 insertRequest(requests, req);
             }
-        }
-        break;
+            break;
+        case DROP_TAIL:
+            while (1) {
+                clientlen = sizeof(clientaddr);
+                connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+                gettimeofday(arrival,NULL);
+                req= reqDetailsCreate(connfd,arrival);
+                pthread_mutex_lock(&requests->_mutex);
+                int size = getSizeUltraQueue(requests);
+                if (size == requests->_max_capacity){
+                    Close(connfd);
+                    pthread_mutex_unlock(&requests->_mutex);
+                }
+                else{
+                    pthread_mutex_unlock(&requests->_mutex);
+                    insertRequest(requests, req);
+                }
+            }
+            break;
         case DROP_HEAD:
-        while(1) {
-            clientlen = sizeof(clientaddr);
-            connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-            gettimeofday(arrival,NULL);
-            req= reqDetailsCreate(connfd,arrival);
-            pthread_mutex_lock(&requests->_mutex);
-            int size = getSizeUltraQueue(requests);
-            if (size == requests->_max_capacity){
-                nonAtomic_cancelRequest(requests);
-                nonAtomic_insertRequest(requests,req);
-                pthread_mutex_unlock(&requests->_mutex);
+            while(1) {
+                clientlen = sizeof(clientaddr);
+                connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+                gettimeofday(arrival,NULL);
+                req= reqDetailsCreate(connfd,arrival);
+                pthread_mutex_lock(&requests->_mutex);
+                int size = getSizeUltraQueue(requests);
+                if (size == requests->_max_capacity){
+                    if (requests->_requests_waiting->_size==0){
+                        Close(connfd);
+                    }
+                    else{
+                        nonAtomic_cancelRequest(requests);
+                        nonAtomic_insertRequest(requests,req);
+                        pthread_mutex_unlock(&requests->_mutex);
+                    }
+                }
+                else{
+                    pthread_mutex_unlock(&requests->_mutex);
+                    insertRequest(requests,req);
+                }
             }
-            else{
-                pthread_mutex_unlock(&requests->_mutex);
-                insertRequest(requests,req);
-            }
-        }
-        break;
+            break;
         case RANDOM_DROP:
+            while(1) {
+                clientlen = sizeof(clientaddr);
+                connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+                gettimeofday(arrival,NULL);
+                req= reqDetailsCreate(connfd,arrival);
+                pthread_mutex_lock(&requests->_mutex);
+                int size = getSizeUltraQueue(requests);
+                if (size == requests->_max_capacity){
+                    if (requests->_requests_waiting->_size==0){
+                        Close(connfd);
+                    }
+                    else{
+                        randomDropQueue(requests->_requests_waiting);
+                        nonAtomic_insertRequest(requests,req);
+                        pthread_mutex_unlock(&requests->_mutex);
+                    }
+                }
+                else{
+                    pthread_mutex_unlock(&requests->_mutex);
+                    insertRequest(requests,req);
+                }
+            }
         break;
         case DROP_ERROR:
         break;
     }
-    
-    /*
-    while (1) {
-        clientlen = sizeof(clientaddr);
-        connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-        
-        enQueue(requests,connfd);
-	// 
-	// HW3: In general, don't handle the request in the main thread.
-	// Save the relevant info in a buffer and have one of the worker threads 
-	// do the work. 
-	// 
-    }
-    */
-
 }
 
 

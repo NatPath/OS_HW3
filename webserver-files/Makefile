@@ -6,9 +6,9 @@ OBJS = server.o request.o segel.o client.o queue.o ultra_queue.o thread_data.o
 TARGET = server
 
 CC = gcc
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall 
 
-LIBS = -lpthread 
+LIBS = -lpthread -lm
 
 .SUFFIXES: .c .o 
 
@@ -26,7 +26,7 @@ output.cgi: output.c
 	$(CC) $(CFLAGS) -o output.cgi output.c
 
 .c.o:
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $< -lm
 
 clean:
 	-rm -f $(OBJS) server client output.cgi

@@ -1,2 +1,4 @@
 webserver-files/*.o
 webserver-files/venv
+webserver-files/modefied_test_with_setup
+webserver-files/test

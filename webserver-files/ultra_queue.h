@@ -18,6 +18,7 @@ void insertRequest(UltraQueue uq, ReqDetails req_details);
 void nonAtomic_insertRequest(UltraQueue uq, ReqDetails req_details);
 ReqNode grabRequest(UltraQueue uq);
 void nonAtomic_cancelRequest(UltraQueue uq);
+void nonAtomic_cancelRequestRandom(UltraQueue uq);
 void finishRequest(UltraQueue uq, ReqNode reqNode);
 int getSizeUltraQueue(UltraQueue uq);
 

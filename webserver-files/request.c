@@ -20,16 +20,15 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
 
    // Write out the header information for this response
    sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
+   /*
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
+   */
 
-   sprintf(buf, "Content-Type: text/html\r\n");
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
+   //
 
-   sprintf(buf, "Content-Length: %lu\r\n\r\n", strlen(body));
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
+   //stats
+   /*
    sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, statistics->_arrival->tv_sec, statistics->_arrival->tv_usec);
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
@@ -50,9 +49,24 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, statistics->_thread_dynamic);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, statistics->_thread_dynamic);
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
+
+*/
+   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, statistics->_arrival->tv_sec, statistics->_arrival->tv_usec);
+   sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, statistics->_dispatch->tv_sec, statistics->_dispatch->tv_usec);
+   sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, statistics->_thread_id);
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, statistics->_thread_count);
+   sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, statistics->_thread_static);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, statistics->_thread_dynamic);
+   
+   sprintf(buf, "Content-Type: text/html\r\n");
+   sprintf(buf, "Content-Length: %lu\r\n\r\n", strlen(body));
+   
+   Rio_writen(fd, buf, strlen(buf));
+   printf("%s", buf);
+   
 
    // Write out the content
    Rio_writen(fd, body, strlen(body));
@@ -174,11 +188,8 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadData statist
    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
    Close(srcfd);
 
-   // put together response
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
-   sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
-   sprintf(buf, "%sContent-Length: %d\r\n", buf, filesize);
-   sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, filetype);
+
    sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, statistics->_arrival->tv_sec, statistics->_arrival->tv_usec);
 
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, statistics->_dispatch->tv_sec, statistics->_dispatch->tv_usec);
@@ -191,7 +202,13 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadData statist
 
    sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, statistics->_thread_dynamic);
 
+   // put together response
+   sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
+   sprintf(buf, "%sContent-Length: %d\r\n", buf, filesize);
+   sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, filetype);
+   //
    Rio_writen(fd, buf, strlen(buf));
+
 
    //  Writes out to the client socket the memory-mapped file 
    Rio_writen(fd, srcp, filesize);

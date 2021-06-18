@@ -1,9 +1,11 @@
 #include "ultra_queue.h"
+#include <stdlib.h>
+#include "segel.h"
 
 UltraQueue ultraQueueCreate(int max_capacity){
     UltraQueue new_uq = (UltraQueue)malloc(sizeof(*new_uq));
-    new_uq->_requests_waiting= queueCreate(max_capacity);
-    new_uq->_requests_working= queueCreate(max_capacity);
+    new_uq->_requests_waiting= queueCreate();
+    new_uq->_requests_working= queueCreate();
     new_uq->_size=0;
     new_uq->_max_capacity=max_capacity;
     pthread_cond_init(&new_uq->_enqueue_allowed,NULL);
@@ -38,11 +40,23 @@ ReqNode grabRequest(UltraQueue uq){
     return reqNode;
 }
 void nonAtomic_cancelRequest(UltraQueue uq){
-    nonAtomic_deQueue(uq->_requests_waiting);
-    uq->_requests_waiting->_size--;
+    ReqDetails req = nonAtomic_deQueue(uq->_requests_waiting);
+    if (req==NULL){
+        return;
+    }
+    //uq->_requests_waiting->_size--;
     uq->_size--;
 }
+/*
+void nonAtomic_cancelRequestRandom(UltraQueue uq){
+    nonAtomic_deQueueRandom(uq->_requests_waiting);
+    //uq->_requests_waiting->_size--;
+    uq->_size--;
+}
+*/
+
 void finishRequest(UltraQueue uq, ReqNode reqNode){
+    Close (reqNode->_req->_connfd);
     pthread_mutex_lock(&uq->_mutex);
     nonAtomic_removeRequest(uq->_requests_working,reqNode);
     uq->_size--;
@@ -51,10 +65,13 @@ void finishRequest(UltraQueue uq, ReqNode reqNode){
 }
 
 int getSizeUltraQueue(UltraQueue uq){
+    /*
     if (uq->_requests_waiting->_size + uq->_requests_working->_size != uq->_size){
         return -1; // indicating there is an error
     }
     else{
         return uq->_size;
     }
+    */
+    return uq->_size;
 }
