@@ -40,11 +40,11 @@ ReqNode grabRequest(UltraQueue uq){
     return reqNode;
 }
 void nonAtomic_cancelRequest(UltraQueue uq){
+    Close(uq->_requests_waiting->_head->_req->_connfd);
     ReqDetails req = nonAtomic_deQueue(uq->_requests_waiting);
     if (req==NULL){
         return;
     }
-    Close(req->_connfd);
     uq->_size--;
 }
 /*
@@ -56,7 +56,6 @@ void nonAtomic_cancelRequestRandom(UltraQueue uq){
 */
 
 void finishRequest(UltraQueue uq, ReqNode reqNode){
-    Close (reqNode->_req->_connfd);
     pthread_mutex_lock(&uq->_mutex);
     nonAtomic_removeRequest(uq->_requests_working,reqNode);
     uq->_size--;

@@ -20,49 +20,28 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
 
    // Write out the header information for this response
    sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
-   /*
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-   */
-
-   //
-
-   //stats
-   /*
-   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, statistics->_arrival->tv_sec, statistics->_arrival->tv_usec);
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-   sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, statistics->_dispatch->tv_sec, statistics->_dispatch->tv_usec);
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-
-   sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, statistics->_thread_id);
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-
-   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, statistics->_thread_count);
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-
-   sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, statistics->_thread_static);
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, statistics->_thread_dynamic);
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-
-*/
-   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, statistics->_arrival->tv_sec, statistics->_arrival->tv_usec);
-   sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, statistics->_dispatch->tv_sec, statistics->_dispatch->tv_usec);
-   sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, statistics->_thread_id);
-   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, statistics->_thread_count);
-   sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, statistics->_thread_static);
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, statistics->_thread_dynamic);
-   
    sprintf(buf, "Content-Type: text/html\r\n");
-   sprintf(buf, "Content-Length: %lu\r\n\r\n", strlen(body));
+   Rio_writen(fd, buf, strlen(buf));
+   printf("%s", buf);
+
+   sprintf(buf, "Content-Length: %lu\r\n", strlen(body));
+
+   sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
+   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, statistics->_arrival->tv_sec, statistics->_arrival->tv_usec);
+
+   sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, statistics->_dispatch->tv_sec, statistics->_dispatch->tv_usec);
+
+   sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, statistics->_thread_id);
+
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, statistics->_thread_count);
+
+   sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, statistics->_thread_static);
+
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, statistics->_thread_dynamic);
+   
    
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);

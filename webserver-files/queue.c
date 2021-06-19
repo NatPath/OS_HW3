@@ -122,6 +122,9 @@ void nonAtomic_removeRequest(ReqQueue q,ReqNode reqNode){
         if ( reqNode->_next != NULL){
             reqNode->_next->_prev= reqNode->_prev;
         }
+        else{
+            q->_tail=reqNode->_prev;
+        }
         q->_size--;
         free(reqNode);
     }
@@ -138,7 +141,8 @@ void nonAtomic_removeRequest(ReqQueue q,ReqNode reqNode){
      }
      return p;
  }
-void randomDropQueue(ReqQueue q){
+int randomDropQueue(ReqQueue q){
+    printf("Begining RANDOM_DROP\n");
     int num_to_drop= (int)ceil(q->_size*0.25);
     int *indexes_taken=(int*)malloc(sizeof(int)*q->_size);
     for (int i=0 ;i<q->_size;i++){
@@ -162,5 +166,8 @@ void randomDropQueue(ReqQueue q){
         Close(nodes_to_delete[i]->_req->_connfd);
         nonAtomic_removeRequest(q,nodes_to_delete[i]);
     }
-    q->_size=q->_size-num_to_drop;
+    free(indexes_taken);
+    free(indexes_to_drop);
+    free(nodes_to_delete);
+    return num_to_drop;
 }

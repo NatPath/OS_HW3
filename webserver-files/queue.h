@@ -39,6 +39,7 @@ ReqDetails nonAtomic_deQueue(ReqQueue q);
 void nonAtomic_removeRequest(ReqQueue q,ReqNode reqNode);
 int getSizeQueue(ReqQueue q);
 ReqNode getNthNodeQueue(ReqQueue q,int n);
-void randomDropQueue(ReqQueue q);
+//returns the number of dropped items. is supposed to be ceil(0.25*q->_size)
+int randomDropQueue(ReqQueue q);
 
 #endif

@@ -81,8 +81,8 @@ void* thread_handles_request(void* stats){
         int connfd = det->_connfd;
         arrival = det->_arrival_time;
         gettimeofday(dispatch,NULL);
-        dispatch->tv_sec-=arrival->tv_sec;
-        dispatch->tv_usec-=arrival->tv_usec;
+        dispatch->tv_sec -= arrival->tv_sec;
+        dispatch->tv_usec -= arrival->tv_usec;
         statistics->_arrival = arrival;
         statistics->_dispatch = dispatch;
         requestHandle(connfd,statistics);
@@ -201,19 +201,18 @@ int main(int argc, char *argv[])
                 if (size == requests->_max_capacity){
                     if (requests->_requests_waiting->_size==0){
                         Close(connfd);
+                        pthread_mutex_unlock(&requests->_mutex);
                     }
                     else{
-                        randomDropQueue(requests->_requests_waiting);
-                        nonAtomic_insertRequest(requests,req);
-                        pthread_cond_signal(&requests->_dequeue_allowed);
+                        int num_to_drop=randomDropQueue(requests->_requests_waiting);
+                        requests->_size=requests->_size-num_to_drop;
+                        pthread_mutex_unlock(&requests->_mutex);
+                        insertRequest(requests,req);
                     }
-                    pthread_mutex_unlock(&requests->_mutex);
                 }
                 else{
-                    nonAtomic_insertRequest(requests,req);
-                    pthread_cond_signal(&requests->_dequeue_allowed);
                     pthread_mutex_unlock(&requests->_mutex);
-                    //insertRequest(requests,req);
+                    insertRequest(requests,req);
                 }
             }
         break;
