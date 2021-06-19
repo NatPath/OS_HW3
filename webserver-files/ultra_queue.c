@@ -44,7 +44,7 @@ void nonAtomic_cancelRequest(UltraQueue uq){
     if (req==NULL){
         return;
     }
-    //uq->_requests_waiting->_size--;
+    Close(req->_connfd);
     uq->_size--;
 }
 /*
@@ -65,13 +65,9 @@ void finishRequest(UltraQueue uq, ReqNode reqNode){
 }
 
 int getSizeUltraQueue(UltraQueue uq){
-    /*
     if (uq->_requests_waiting->_size + uq->_requests_working->_size != uq->_size){
-        return -1; // indicating there is an error
+        printf("you messed up real bad\n");
+        exit(-1); // indicating there is an error
     }
-    else{
-        return uq->_size;
-    }
-    */
     return uq->_size;
 }

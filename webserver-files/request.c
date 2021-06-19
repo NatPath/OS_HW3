@@ -200,7 +200,7 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadData statist
 
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, statistics->_thread_static);
 
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, statistics->_thread_dynamic);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, statistics->_thread_dynamic);
 
    // put together response
    sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);

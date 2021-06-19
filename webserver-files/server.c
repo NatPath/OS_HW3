@@ -86,6 +86,7 @@ void* thread_handles_request(void* stats){
         statistics->_arrival = arrival;
         statistics->_dispatch = dispatch;
         requestHandle(connfd,statistics);
+        Close(connfd);
         finishRequest(requests,req_node);
     }
     return NULL;
@@ -111,6 +112,7 @@ OverLoadHandling choose_OL_Handling_Method(const char * schedalg){
 }
 int main(int argc, char *argv[])
 {
+    printf("Server started\n");
     int listenfd, connfd, port, clientlen;
     struct sockaddr_in clientaddr;
     int num_of_threads, queue_size;
@@ -175,7 +177,6 @@ int main(int argc, char *argv[])
                 if (size == requests->_max_capacity){
                     if (requests->_requests_waiting->_size==0){
                         Close(connfd);
-
                     }
                     else{
                         nonAtomic_cancelRequest(requests);
@@ -204,12 +205,15 @@ int main(int argc, char *argv[])
                     else{
                         randomDropQueue(requests->_requests_waiting);
                         nonAtomic_insertRequest(requests,req);
+                        pthread_cond_signal(&requests->_dequeue_allowed);
                     }
                     pthread_mutex_unlock(&requests->_mutex);
                 }
                 else{
+                    nonAtomic_insertRequest(requests,req);
+                    pthread_cond_signal(&requests->_dequeue_allowed);
                     pthread_mutex_unlock(&requests->_mutex);
-                    insertRequest(requests,req);
+                    //insertRequest(requests,req);
                 }
             }
         break;

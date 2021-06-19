@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "queue.h"
 #include <math.h>
+#include "segel.h"
 
 /*
 ReqNode nodeCreate(int value, struct timeval * arrival_time){
@@ -81,6 +82,9 @@ void queueDestroy(ReqQueue q){
  }
  ReqDetails nonAtomic_deQueue(ReqQueue q){
     ReqDetails res = topQueue(q);
+    if (res== NULL){
+        return NULL;
+    }
     ReqNode temp = q->_head;
     q->_head = q->_head->_next; 
     if ( q->_head != NULL){
@@ -155,6 +159,7 @@ void randomDropQueue(ReqQueue q){
         nodes_to_delete[i]=getNthNodeQueue(q,i);
     }
     for (int i=0; i<num_to_drop;i++){
+        Close(nodes_to_delete[i]->_req->_connfd);
         nonAtomic_removeRequest(q,nodes_to_delete[i]);
     }
     q->_size=q->_size-num_to_drop;
